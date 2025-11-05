@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ==========================================================
-# 📚 SISTEMA DE RECOMENDACIÓN BASADO EN CONTENIDO + VISUALIZACIÓN
-# ==========================================================
+# SISTEMA DE RECOMENDACIÓN BASADO EN CONTENIDO + VISUALIZACIÓN
 
 st.set_page_config(
     page_title="Book Recommendation System",
@@ -14,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---- Estilos personalizados ----
+
 st.markdown("""
 <style>
 body {
@@ -48,13 +46,11 @@ body {
 """, unsafe_allow_html=True)
 
 # ---- Encabezado ----
-st.title("📖 Book Recommendation System with Scores")
-st.markdown("#### Based on *TF-IDF + Cosine Similarity* (Content-Based Filtering).")
-st.info("📂 Upload a CSV file containing: `title`, `author`, `genre`, `description`.")
+st.title("Recomendación de libros ")
+st.markdown("#### Basado en *TF-IDF + Cosine Similarity*.")
+st.info("Upload a CSV file containing: `title`, `author`, `genre`, `description`.")
 
-# ==========================================================
-# 📤 CARGA DE ARCHIVO CSV
-# ==========================================================
+# CARGA DE ARCHIVO CSV
 archivo = st.file_uploader("Upload your CSV file", type=["csv"])
 
 if archivo is not None:
@@ -67,7 +63,7 @@ if archivo is not None:
         else:
             df["contenido"] = df["author"] + " " + df["genre"] + " " + df["description"]
 
-            # Vectorización TF-IDF en inglés ✅
+            # Vectorización TF-IDF en inglés 
             tfidf = TfidfVectorizer(stop_words="english")
             matriz_tfidf = tfidf.fit_transform(df["contenido"])
 
@@ -95,12 +91,12 @@ if archivo is not None:
             with col2:
                 n_recomendaciones = st.slider("Number of recommendations", 1, 10, 5)
 
-            if st.button("✨ Recommend"):
+            if st.button(" Recommend"):
                 recomendaciones = recomendar_libros(libro_seleccionado, n=n_recomendaciones)
                 if recomendaciones.empty:
                     st.warning("No similar books found.")
                 else:
-                    st.markdown(f"### 📚 Books similar to **{libro_seleccionado}**")
+                    st.markdown(f"###  Books similar to **{libro_seleccionado}**")
                     st.markdown("---")
 
                     # --- Gráfico de barras con puntajes ---
@@ -124,6 +120,6 @@ if archivo is not None:
                         </div>
                         """, unsafe_allow_html=True)
     except Exception as e:
-        st.error(f"⚠️ Error reading file: {e}")
+        st.error(f" Error reading file: {e}")
 else:
-    st.warning("📥 Waiting for you to upload your CSV file...")
+    st.warning(" Waiting for you to upload your CSV file...")
