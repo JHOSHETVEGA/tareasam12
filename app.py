@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # ==========================================================
-# 📚 SISTEMA DE RECOMENDACIÓN BASADO EN CONTENIDO
+# 📚 SISTEMA DE RECOMENDACIÓN BASADO EN CONTENIDO + VISUALIZACIÓN
 # ==========================================================
 
 st.set_page_config(
@@ -47,26 +48,23 @@ body {
 """, unsafe_allow_html=True)
 
 # ---- Encabezado ----
-st.title("📖 Book Recommendation System")
+st.title("📖 Book Recommendation System with Scores")
 st.markdown("#### Based on *TF-IDF + Cosine Similarity* (Content-Based Filtering).")
-st.info("📂 Upload a CSV file containing the columns: `title`, `author`, `genre`, `description`.")
+st.info("📂 Upload a CSV file containing: `title`, `author`, `genre`, `description`.")
 
 # ==========================================================
 # 📤 CARGA DE ARCHIVO CSV
 # ==========================================================
-
 archivo = st.file_uploader("Upload your CSV file", type=["csv"])
 
 if archivo is not None:
     try:
         df = pd.read_csv(archivo)
 
-        # Validar columnas necesarias
         columnas_requeridas = {"title", "author", "genre", "description"}
         if not columnas_requeridas.issubset(set(df.columns)):
             st.error(f"The file must contain the columns: {', '.join(columnas_requeridas)}")
         else:
-            # Crear campo combinado de contenido
             df["contenido"] = df["author"] + " " + df["genre"] + " " + df["description"]
 
             # Vectorización TF-IDF en inglés ✅
@@ -76,15 +74,18 @@ if archivo is not None:
             # Matriz de similitud coseno
             similaridad = cosine_similarity(matriz_tfidf)
 
-            # Función recomendadora
-            def recomendar_libros(titulo, n=3):
+            # Función recomendadora con puntajes
+            def recomendar_libros(titulo, n=5):
                 if titulo not in df["title"].values:
-                    return []
+                    return pd.DataFrame()
                 idx = df[df["title"] == titulo].index[0]
                 scores = list(enumerate(similaridad[idx]))
                 scores = sorted(scores, key=lambda x: x[1], reverse=True)
                 indices = [i[0] for i in scores[1:n+1]]
-                return df.iloc[indices][["title", "author", "genre", "description"]]
+                valores = [i[1] for i in scores[1:n+1]]
+                recomendaciones = df.iloc[indices][["title", "author", "genre", "description"]].copy()
+                recomendaciones["score"] = valores
+                return recomendaciones
 
             # Interfaz de selección
             st.markdown("---")
@@ -92,21 +93,33 @@ if archivo is not None:
             with col1:
                 libro_seleccionado = st.selectbox("📘 Select a book:", df["title"].values)
             with col2:
-                n_recomendaciones = st.slider("Number of recommendations", 1, 5, 3)
+                n_recomendaciones = st.slider("Number of recommendations", 1, 10, 5)
 
             if st.button("✨ Recommend"):
                 recomendaciones = recomendar_libros(libro_seleccionado, n=n_recomendaciones)
-                if len(recomendaciones) == 0:
+                if recomendaciones.empty:
                     st.warning("No similar books found.")
                 else:
                     st.markdown(f"### 📚 Books similar to **{libro_seleccionado}**")
                     st.markdown("---")
+
+                    # --- Gráfico de barras con puntajes ---
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    ax.barh(recomendaciones["title"], recomendaciones["score"], color="#1E90FF")
+                    ax.set_xlabel("Similarity Score (Cosine)")
+                    ax.set_ylabel("Book Title")
+                    ax.invert_yaxis()
+                    ax.set_title("Similarity Scores for Recommended Books")
+                    st.pyplot(fig)
+
+                    # --- Mostrar tarjetas de recomendaciones ---
                     for _, row in recomendaciones.iterrows():
                         st.markdown(f"""
                         <div class="book-card">
                             <div class="title">{row['title']}</div>
                             <div class="author">by {row['author']}</div>
                             <div class="genre">{row['genre']}</div>
+                            <p><b>Similarity Score:</b> {row['score']:.3f}</p>
                             <p>{row['description']}</p>
                         </div>
                         """, unsafe_allow_html=True)
